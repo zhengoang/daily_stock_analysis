@@ -1170,3 +1170,19 @@ def get_api_keys_for_model(model: str, config: Config) -> List[str]:
     if model.startswith("openai/") or "/" not in model:
         return [k for k in config.openai_api_keys if k]
     return []
+def extra_litellm_params(model: str, config: Config) -> Dict[str, Any]:
+    """Build extra litellm params for a model (legacy path only).
+
+    When llm_model_list is populated, the Router already carries api_base
+    and headers per-deployment, so this is not called.
+    """
+    params: Dict[str, Any] = {}
+    # deepseek/ provider: litellm auto-resolves api_base, no manual override needed
+    if model.startswith("deepseek/"):
+        return params
+    if model.startswith("openai/") or "/" not in model:
+        if config.openai_base_url:
+            params["api_base"] = config.openai_base_url
+        if config.openai_base_url and "aihubmix.com" in config.openai_base_url:
+            params["extra_headers"] = {"APP-Code": "GPIJ3886"}
+    return params
