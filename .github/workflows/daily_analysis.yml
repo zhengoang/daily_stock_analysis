@@ -26,6 +26,7 @@ jobs:
         run: |
           echo "FEISHU_WEBHOOK_URL=${{ secrets.FEISHU_WEBHOOK_URL }}" > .env
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
           echo "STOCK_LIST=${{ secrets.STOCK_LIST }}" >> .env
           echo "WEBUI_ENABLED=false" >> .env
           echo "SCHEDULE_ENABLED=false" >> .env
