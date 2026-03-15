@@ -1162,4 +1162,11 @@ def get_api_keys_for_model(model: str, config: Config) -> List[str]:
     no Router is built and a direct litellm.completion() call is needed.
     """
     if model.startswith("gemini/") or model.startswith("vertex_ai/"):
-        return [k for k in config.gemini_api_keys if k
+        return [k for k in config.gemini_api_keys if k]
+    if model.startswith("anthropic/"):
+        return [k for k in config.anthropic_api_keys if k]
+    if model.startswith("deepseek/"):
+        return [k for k in config.deepseek_api_keys if k]
+    if model.startswith("openai/") or "/" not in model:
+        return [k for k in config.openai_api_keys if k]
+    return []
