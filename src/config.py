@@ -100,8 +100,8 @@ class Config:
 
     # Legacy single-key fields (kept for backward compatibility; gemini_api_keys[0] when set)
     gemini_api_key: Optional[str] = None
-    gemini_model: str = "gemini-3-flash-preview"  # 主模型
-    gemini_model_fallback: str = "gemini-2.5-flash"  # 备选模型
+    gemini_model: str = "qwen/qwen-3.5-turbo"  # 已替换为通义千问
+    gemini_model_fallback: str = "qwen/qwen-3.5-turbo"  # 已替换为通义千问
     gemini_temperature: float = 0.7  # 温度参数（0.0-2.0，控制输出随机性，默认0.7）
 
     # Gemini API 请求配置（防止 429 限流）
@@ -112,7 +112,7 @@ class Config:
     # Anthropic Claude API（备选，当 Gemini 不可用时使用）
     anthropic_api_key: Optional[str] = None
     anthropic_model: str = "claude-3-5-sonnet-20241022"  # Claude model name
-    anthropic_temperature: float = 0.7  # Anthropic temperature (0.0-1.0, default 0.7)
+    anthropic_temperature: float = 0.7  # Anthropic temperature (0.0-1.0,默认0.7)
     anthropic_max_tokens: int = 8192  # Max tokens for Anthropic responses
 
     # OpenAI 兼容 API（备选，当 Gemini/Anthropic 不可用时使用）
@@ -415,10 +415,10 @@ class Config:
             stock_list = ['600519', '000001', '300750']
         
         # === LiteLLM multi-key parsing ===
-        # GEMINI_API_KEYS (comma-separated) > GEMINI_API_KEY (single)
-        _gemini_keys_raw = os.getenv('GEMINI_API_KEYS', '')
+        # GEMINI_API_KEYS 替换为 QWEN_API_KEYS（通义千问）
+        _gemini_keys_raw = os.getenv('QWEN_API_KEYS', '')
         gemini_api_keys = [k.strip() for k in _gemini_keys_raw.split(',') if k.strip()]
-        _single_gemini = os.getenv('GEMINI_API_KEY', '').strip()
+        _single_gemini = os.getenv('QWEN_API_KEY', '').strip()
         if not gemini_api_keys and _single_gemini:
             gemini_api_keys = [_single_gemini]
 
@@ -447,37 +447,9 @@ class Config:
             if _single_deepseek:
                 deepseek_api_keys = [_single_deepseek]
 
-        # LITELLM_MODEL: explicit config takes precedence; else infer from available keys
-        litellm_model = os.getenv('LITELLM_MODEL', '').strip()
-        if not litellm_model:
-            _gemini_model_name = os.getenv('GEMINI_MODEL', 'gemini-3-flash-preview').strip()
-            _anthropic_model_name = os.getenv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022').strip()
-            _openai_model_name = os.getenv('OPENAI_MODEL', 'gpt-4o-mini').strip()
-            if gemini_api_keys:
-                litellm_model = f'gemini/{_gemini_model_name}'
-            elif anthropic_api_keys:
-                litellm_model = f'anthropic/{_anthropic_model_name}'
-            elif deepseek_api_keys:
-                litellm_model = 'deepseek/deepseek-chat'
-            elif openai_api_keys:
-                # For openai-compatible models, add prefix only if not already prefixed
-                if '/' not in _openai_model_name:
-                    litellm_model = f'openai/{_openai_model_name}'
-                else:
-                    litellm_model = _openai_model_name
-
-        # LITELLM_FALLBACK_MODELS: comma-separated list of fallback models
-        _fallback_str = os.getenv('LITELLM_FALLBACK_MODELS', '')
-        if _fallback_str.strip():
-            litellm_fallback_models = [m.strip() for m in _fallback_str.split(',') if m.strip()]
-        else:
-            # Backward compat: use gemini_model_fallback when primary is gemini
-            _gemini_fallback = os.getenv('GEMINI_MODEL_FALLBACK', 'gemini-2.5-flash').strip()
-            if litellm_model.startswith('gemini/') and _gemini_fallback:
-                _fb = f'gemini/{_gemini_fallback}' if '/' not in _gemini_fallback else _gemini_fallback
-                litellm_fallback_models = [_fb]
-            else:
-                litellm_fallback_models = []
+        # LITELLM_MODEL 强制设置为通义千问
+        litellm_model = "qwen/qwen-3.5-turbo"
+        litellm_fallback_models = ["qwen/qwen-3.5-turbo"]
 
         # === LLM Channels + YAML config ===
         litellm_config_path = os.getenv('LITELLM_CONFIG', '').strip() or None
@@ -528,7 +500,7 @@ class Config:
         bocha_api_keys = [k.strip() for k in bocha_keys_str.split(',') if k.strip()]
         
         tavily_keys_str = os.getenv('TAVILY_API_KEYS', '')
-        tavily_api_keys = [k.strip() for k in tavily_keys_str.split(',') if k.strip()]
+        tavily_api_keys = [k.strip() for k in _tavily_keys_str.split(',') if k.strip()]
         
         serpapi_keys_str = os.getenv('SERPAPI_API_KEYS', '')
         serpapi_keys = [k.strip() for k in serpapi_keys_str.split(',') if k.strip()]
@@ -561,9 +533,9 @@ class Config:
             anthropic_api_keys=anthropic_api_keys,
             openai_api_keys=openai_api_keys,
             deepseek_api_keys=deepseek_api_keys,
-            gemini_api_key=os.getenv('GEMINI_API_KEY'),
-            gemini_model=os.getenv('GEMINI_MODEL', 'gemini-3-flash-preview'),
-            gemini_model_fallback=os.getenv('GEMINI_MODEL_FALLBACK', 'gemini-2.5-flash'),
+            gemini_api_key=os.getenv('QWEN_API_KEY'),
+            gemini_model="qwen/qwen-3.5-turbo",
+            gemini_model_fallback="qwen/qwen-3.5-turbo",
             gemini_temperature=float(os.getenv('GEMINI_TEMPERATURE', '0.7')),
             gemini_request_delay=float(os.getenv('GEMINI_REQUEST_DELAY', '2.0')),
             gemini_max_retries=int(os.getenv('GEMINI_MAX_RETRIES', '5')),
@@ -572,20 +544,13 @@ class Config:
             anthropic_model=os.getenv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
             anthropic_temperature=float(os.getenv('ANTHROPIC_TEMPERATURE', '0.7')),
             anthropic_max_tokens=int(os.getenv('ANTHROPIC_MAX_TOKENS', '8192')),
-            # AIHubmix is the preferred OpenAI-compatible provider (one key, all models, no VPN required).
-            # Within the OpenAI-compatible layer: AIHUBMIX_KEY takes priority over OPENAI_API_KEY.
-            # Overall provider fallback order: Gemini > Anthropic > OpenAI-compatible (incl. AIHubmix).
-            # base_url is auto-set to aihubmix.com/v1 when AIHUBMIX_KEY is used and no explicit
-            # OPENAI_BASE_URL override is provided.
-            # Model names match upstream (e.g. gemini-3.1-pro-preview, gpt-4o, gpt-4o-free, deepseek-chat).
             openai_api_key=os.getenv('AIHUBMIX_KEY') or os.getenv('OPENAI_API_KEY') or None,
             openai_base_url=os.getenv('OPENAI_BASE_URL') or (
                 'https://aihubmix.com/v1' if os.getenv('AIHUBMIX_KEY') else None
-            ),  # noqa: E501
+            ),
             openai_model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             openai_vision_model=os.getenv('OPENAI_VISION_MODEL') or None,
             openai_temperature=float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
-            # Vision model: VISION_MODEL > OPENAI_VISION_MODEL (alias) > default
             vision_model=(
                 os.getenv('VISION_MODEL')
                 or os.getenv('OPENAI_VISION_MODEL')
@@ -660,602 +625,5 @@ class Config:
             schedule_time=os.getenv('SCHEDULE_TIME', '18:00'),
             schedule_run_immediately=os.getenv('SCHEDULE_RUN_IMMEDIATELY', 'true').lower() == 'true',
             run_immediately=os.getenv('RUN_IMMEDIATELY', 'true').lower() == 'true',
-            market_review_enabled=os.getenv('MARKET_REVIEW_ENABLED', 'true').lower() == 'true',
-            market_review_region=cls._parse_market_review_region(
-                os.getenv('MARKET_REVIEW_REGION', 'cn')
-            ),
-            trading_day_check_enabled=os.getenv('TRADING_DAY_CHECK_ENABLED', 'true').lower() != 'false',
-            webui_enabled=os.getenv('WEBUI_ENABLED', 'false').lower() == 'true',
-            webui_host=os.getenv('WEBUI_HOST', '127.0.0.1'),
-            webui_port=int(os.getenv('WEBUI_PORT', '8000')),
-            # 机器人配置
-            bot_enabled=os.getenv('BOT_ENABLED', 'true').lower() == 'true',
-            bot_command_prefix=os.getenv('BOT_COMMAND_PREFIX', '/'),
-            bot_rate_limit_requests=int(os.getenv('BOT_RATE_LIMIT_REQUESTS', '10')),
-            bot_rate_limit_window=int(os.getenv('BOT_RATE_LIMIT_WINDOW', '60')),
-            bot_admin_users=[u.strip() for u in os.getenv('BOT_ADMIN_USERS', '').split(',') if u.strip()],
-            # 飞书机器人
-            feishu_verification_token=os.getenv('FEISHU_VERIFICATION_TOKEN'),
-            feishu_encrypt_key=os.getenv('FEISHU_ENCRYPT_KEY'),
-            feishu_stream_enabled=os.getenv('FEISHU_STREAM_ENABLED', 'false').lower() == 'true',
-            # 钉钉机器人
-            dingtalk_app_key=os.getenv('DINGTALK_APP_KEY'),
-            dingtalk_app_secret=os.getenv('DINGTALK_APP_SECRET'),
-            dingtalk_stream_enabled=os.getenv('DINGTALK_STREAM_ENABLED', 'false').lower() == 'true',
-            # 企业微信机器人
-            wecom_corpid=os.getenv('WECOM_CORPID'),
-            wecom_token=os.getenv('WECOM_TOKEN'),
-            wecom_encoding_aes_key=os.getenv('WECOM_ENCODING_AES_KEY'),
-            wecom_agent_id=os.getenv('WECOM_AGENT_ID'),
-            # Telegram
-            telegram_webhook_secret=os.getenv('TELEGRAM_WEBHOOK_SECRET'),
-            # Discord 机器人扩展配置
-            discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
-            # 实时行情增强数据配置
-            enable_realtime_quote=os.getenv('ENABLE_REALTIME_QUOTE', 'true').lower() == 'true',
-            enable_realtime_technical_indicators=os.getenv(
-                'ENABLE_REALTIME_TECHNICAL_INDICATORS', 'true'
-            ).lower() == 'true',
-            enable_chip_distribution=os.getenv('ENABLE_CHIP_DISTRIBUTION', 'true').lower() == 'true',
-            # 东财接口补丁开关
-            enable_eastmoney_patch=os.getenv('ENABLE_EASTMONEY_PATCH', 'false').lower() == 'true',
-            # 实时行情数据源优先级：
-            # - tencent: 腾讯财经，有量比/换手率/PE/PB等，单股查询稳定（推荐）
-            # - akshare_sina: 新浪财经，基本行情稳定，但无量比
-            # - efinance/akshare_em: 东财全量接口，数据最全但容易被封
-            # - tushare: Tushare Pro，需要2000积分，数据全面
-            realtime_source_priority=cls._resolve_realtime_source_priority(),
-            realtime_cache_ttl=int(os.getenv('REALTIME_CACHE_TTL', '600')),
-            circuit_breaker_cooldown=int(os.getenv('CIRCUIT_BREAKER_COOLDOWN', '300'))
-        )
-    
-    @classmethod
-    def _parse_litellm_yaml(cls, config_path: str) -> List[Dict[str, Any]]:
-        """Parse a standard LiteLLM config YAML file into Router model_list.
-
-        Supports the ``os.environ/VAR_NAME`` syntax for secret references.
-        Returns an empty list on any error (logged, never raises).
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-        try:
-            import yaml
-        except ImportError:
-            _logger.warning("PyYAML not installed; LITELLM_CONFIG ignored. Install with: pip install pyyaml")
-            return []
-
-        path = Path(config_path)
-        if not path.is_absolute():
-            path = Path(__file__).parent.parent / path
-        if not path.exists():
-            _logger.warning(f"LITELLM_CONFIG file not found: {path}")
-            return []
-
-        try:
-            with open(path, encoding='utf-8') as f:
-                yaml_config = yaml.safe_load(f) or {}
-        except Exception as e:
-            _logger.warning(f"Failed to parse LITELLM_CONFIG: {e}")
-            return []
-
-        model_list = yaml_config.get('model_list', [])
-        if not isinstance(model_list, list):
-            _logger.warning("LITELLM_CONFIG: model_list must be a list")
-            return []
-
-        # Resolve os.environ/ references in string params
-        for entry in model_list:
-            params = entry.get('litellm_params', {})
-            for key in list(params.keys()):
-                val = params.get(key)
-                if isinstance(val, str) and val.startswith('os.environ/'):
-                    env_name = val.split('/', 1)[1]
-                    params[key] = os.getenv(env_name, '')
-
-        _logger.info(f"LITELLM_CONFIG: loaded {len(model_list)} model deployment(s) from {path}")
-        return model_list
-
-    @classmethod
-    def _parse_llm_channels(cls, channels_str: str) -> List[Dict[str, Any]]:
-        """Parse LLM_CHANNELS env var and per-channel env vars.
-
-        Format:
-            LLM_CHANNELS=aihubmix,deepseek,gemini
-            LLM_AIHUBMIX_BASE_URL=https://aihubmix.com/v1
-            LLM_AIHUBMIX_API_KEY=sk-xxx           (or LLM_AIHUBMIX_API_KEYS=k1,k2)
-            LLM_AIHUBMIX_MODELS=openai/gpt-4o-mini,openai/claude-3-5-sonnet
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-
-        channels: List[Dict[str, Any]] = []
-        for raw_name in channels_str.split(','):
-            ch_name = raw_name.strip()
-            if not ch_name:
-                continue
-            ch_upper = ch_name.upper()
-
-            base_url = os.getenv(f'LLM_{ch_upper}_BASE_URL', '').strip() or None
-
-            # API keys: LLM_{NAME}_API_KEYS (multi) > LLM_{NAME}_API_KEY (single)
-            api_keys_raw = os.getenv(f'LLM_{ch_upper}_API_KEYS', '')
-            api_keys = [k.strip() for k in api_keys_raw.split(',') if k.strip()]
-            if not api_keys:
-                single_key = os.getenv(f'LLM_{ch_upper}_API_KEY', '').strip()
-                if single_key:
-                    api_keys = [single_key]
-
-            # Models
-            models_raw = os.getenv(f'LLM_{ch_upper}_MODELS', '')
-            models = [m.strip() for m in models_raw.split(',') if m.strip()]
-            # Auto-prefix: models without provider prefix in channels with base_url → openai/
-            models = [
-                (f'openai/{m}' if '/' not in m and base_url else m)
-                for m in models
-            ]
-
-            # Extra headers (JSON string, optional)
-            extra_headers_raw = os.getenv(f'LLM_{ch_upper}_EXTRA_HEADERS', '').strip()
-            extra_headers = None
-            if extra_headers_raw:
-                try:
-                    extra_headers = json.loads(extra_headers_raw)
-                except json.JSONDecodeError:
-                    _logger.warning(f"LLM_{ch_upper}_EXTRA_HEADERS: invalid JSON, ignored")
-
-            if not api_keys:
-                _logger.warning(f"LLM channel '{ch_name}': no API key configured, skipped")
-                continue
-            if not models:
-                _logger.warning(f"LLM channel '{ch_name}': no models configured, skipped")
-                continue
-
-            channels.append({
-                'name': ch_name.lower(),
-                'base_url': base_url,
-                'api_keys': api_keys,
-                'models': models,
-                'extra_headers': extra_headers,
-            })
-            _logger.info(f"LLM channel '{ch_name}': {len(models)} model(s), {len(api_keys)} key(s)")
-
-        return channels
-
-    @classmethod
-    def _channels_to_model_list(cls, channels: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Convert parsed LLM channels to LiteLLM Router model_list format."""
-        model_list: List[Dict[str, Any]] = []
-        for ch in channels:
-            for model_name in ch['models']:
-                for api_key in ch['api_keys']:
-                    litellm_params: Dict[str, Any] = {
-                        'model': model_name,
-                        'api_key': api_key,
-                    }
-                    if ch['base_url']:
-                        litellm_params['api_base'] = ch['base_url']
-                    # Auto-inject aihubmix sponsored header
-                    headers = dict(ch.get('extra_headers') or {})
-                    if ch['base_url'] and 'aihubmix.com' in ch['base_url']:
-                        headers.setdefault('APP-Code', 'GPIJ3886')
-                    if headers:
-                        litellm_params['extra_headers'] = headers
-
-                    model_list.append({
-                        'model_name': model_name,
-                        'litellm_params': litellm_params,
-                    })
-        return model_list
-
-    @classmethod
-    def _legacy_keys_to_model_list(
-        cls,
-        gemini_keys: List[str],
-        anthropic_keys: List[str],
-        openai_keys: List[str],
-        openai_base_url: Optional[str],
-        deepseek_keys: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Build Router model_list from legacy per-provider keys (backward compat).
-
-        Returns a model_list where each provider's keys are expanded into
-        deployments, keyed by placeholder model_name tokens.  The analyzer
-        resolves actual model_names at call time from LITELLM_MODEL /
-        LITELLM_FALLBACK_MODELS.
-        """
-        model_list: List[Dict[str, Any]] = []
-
-        # Gemini keys
-        for k in gemini_keys:
-            if k and len(k) >= 8:
-                model_list.append({
-                    'model_name': '__legacy_gemini__',
-                    'litellm_params': {'model': '__legacy_gemini__', 'api_key': k},
-                })
-
-        # Anthropic keys
-        for k in anthropic_keys:
-            if k and len(k) >= 8:
-                model_list.append({
-                    'model_name': '__legacy_anthropic__',
-                    'litellm_params': {'model': '__legacy_anthropic__', 'api_key': k},
-                })
-
-        # OpenAI-compatible keys
-        for k in openai_keys:
-            if k and len(k) >= 8:
-                params: Dict[str, Any] = {'model': '__legacy_openai__', 'api_key': k}
-                if openai_base_url:
-                    params['api_base'] = openai_base_url
-                if openai_base_url and 'aihubmix.com' in openai_base_url:
-                    params['extra_headers'] = {'APP-Code': 'GPIJ3886'}
-                model_list.append({
-                    'model_name': '__legacy_openai__',
-                    'litellm_params': params,
-                })
-
-        # DeepSeek keys (native litellm provider — auto-resolves api_base)
-        for k in (deepseek_keys or []):
-            if k and len(k) >= 8:
-                model_list.append({
-                    'model_name': '__legacy_deepseek__',
-                    'litellm_params': {
-                        'model': '__legacy_deepseek__',
-                        'api_key': k,
-                    },
-                })
-
-        return model_list
-
-    @classmethod
-    def _parse_stock_email_groups(cls) -> List[Tuple[List[str], List[str]]]:
-        """
-        Parse STOCK_GROUP_N and EMAIL_GROUP_N from environment.
-        Returns [(stocks, emails), ...] ordered by group index.
-        """
-        groups: dict = {}
-        stock_re = re.compile(r'^STOCK_GROUP_(\d+)$', re.IGNORECASE)
-        email_re = re.compile(r'^EMAIL_GROUP_(\d+)$', re.IGNORECASE)
-        for key in os.environ:
-            m = stock_re.match(key)
-            if m:
-                idx = int(m.group(1))
-                val = os.environ[key].strip()
-                groups.setdefault(idx, {})['stocks'] = [c.strip() for c in val.split(',') if c.strip()]
-            m = email_re.match(key)
-            if m:
-                idx = int(m.group(1))
-                val = os.environ[key].strip()
-                groups.setdefault(idx, {})['emails'] = [e.strip() for e in val.split(',') if e.strip()]
-        result = []
-        for idx in sorted(groups.keys()):
-            g = groups[idx]
-            if 'stocks' in g and 'emails' in g and g['stocks'] and g['emails']:
-                result.append((g['stocks'], g['emails']))
-        return result
-
-    @classmethod
-    def _parse_market_review_region(cls, value: str) -> str:
-        """解析大盘复盘市场区域，非法值记录警告后回退为 cn"""
-        import logging
-        v = (value or 'cn').strip().lower()
-        if v in ('cn', 'us', 'both'):
-            return v
-        logging.getLogger(__name__).warning(
-            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'cn'（合法值：cn / us / both）"
-        )
-        return 'cn'
-
-    @classmethod
-    def _parse_md2img_engine(cls, value: str) -> str:
-        """Parse MD2IMG_ENGINE, fallback to wkhtmltoimage for invalid values (Issue #455)."""
-        v = (value or 'wkhtmltoimage').strip().lower()
-        if v in ('wkhtmltoimage', 'markdown-to-file'):
-            return v
-        if v:
-            import logging
-            logging.getLogger(__name__).warning(
-                f"MD2IMG_ENGINE '{value}' invalid, fallback to 'wkhtmltoimage' "
-                "(valid: wkhtmltoimage | markdown-to-file)"
-            )
-        return 'wkhtmltoimage'
-
-    @classmethod
-    def _resolve_realtime_source_priority(cls) -> str:
-        """
-        Resolve realtime source priority with automatic tushare injection.
-
-        When TUSHARE_TOKEN is configured but REALTIME_SOURCE_PRIORITY is not
-        explicitly set, automatically prepend 'tushare' to the default priority
-        so that the paid data source is utilized for realtime quotes as well.
-        """
-        explicit = os.getenv('REALTIME_SOURCE_PRIORITY')
-        default_priority = 'tencent,akshare_sina,efinance,akshare_em'
-
-        if explicit:
-            # User explicitly set priority, respect it
-            return explicit
-
-        tushare_token = os.getenv('TUSHARE_TOKEN', '').strip()
-        if tushare_token:
-            # Token configured but no explicit priority override
-            # Prepend tushare so the paid source is tried first
-            import logging
-            logger = logging.getLogger(__name__)
-            resolved = f'tushare,{default_priority}'
-            logger.info(
-                f"TUSHARE_TOKEN detected, auto-injecting tushare into realtime priority: {resolved}"
-            )
-            return resolved
-
-        return default_priority
-
-    @classmethod
-    def reset_instance(cls) -> None:
-        """重置单例（主要用于测试）"""
-        cls._instance = None
-
-    def refresh_stock_list(self) -> None:
-        """
-        热读取 STOCK_LIST 环境变量并更新配置中的自选股列表
-        
-        支持两种配置方式：
-        1. .env 文件（本地开发、定时任务模式） - 修改后下次执行自动生效
-        2. 系统环境变量（GitHub Actions、Docker） - 启动时固定，运行中不变
-        """
-        # 优先从 .env 文件读取最新配置，这样即使在容器环境中修改了 .env 文件，
-        # 也能获取到最新的股票列表配置
-        env_file = os.getenv("ENV_FILE")
-        env_path = Path(env_file) if env_file else (Path(__file__).parent.parent / '.env')
-        stock_list_str = ''
-        if env_path.exists():
-            # 直接从 .env 文件读取最新的配置
-            env_values = dotenv_values(env_path)
-            stock_list_str = (env_values.get('STOCK_LIST') or '').strip()
-
-        # 如果 .env 文件不存在或未配置，才尝试从系统环境变量读取
-        if not stock_list_str:
-            stock_list_str = os.getenv('STOCK_LIST', '')
-
-        stock_list = [
-            (c or "").strip().upper()
-            for c in stock_list_str.split(',')
-            if (c or "").strip()
-        ]
-
-        if not stock_list:
-            stock_list = ['000001']
-
-        self.stock_list = stock_list
-    
-    def validate_structured(self) -> List[ConfigIssue]:
-        """Return structured validation issues with severity levels.
-
-        Covers all three LLM configuration tiers introduced by PR #494:
-        - LITELLM_CONFIG (YAML)
-        - LLM_CHANNELS (env)
-        - Legacy per-provider keys
-
-        Returns:
-            List of ConfigIssue objects, each carrying a severity
-            ("error" | "warning" | "info"), a human-readable message, and the
-            primary environment variable / field name it relates to.
-        """
-        issues: List[ConfigIssue] = []
-
-        # --- Stock list ---
-        if not self.stock_list:
-            issues.append(ConfigIssue(
-                severity="error",
-                message="未配置自选股列表 (STOCK_LIST)",
-                field="STOCK_LIST",
-            ))
-
-        # --- Data sources (informational only) ---
-        if not self.tushare_token:
-            issues.append(ConfigIssue(
-                severity="info",
-                message="未配置 Tushare Token，将使用其他数据源",
-                field="TUSHARE_TOKEN",
-            ))
-
-        # --- LLM availability ---
-        # llm_model_list is populated for ALL three config tiers (YAML / channels /
-        # legacy keys), so it is the canonical signal that at least one LLM is
-        # configured, regardless of which tier the user chose.
-        if not self.llm_model_list:
-            issues.append(ConfigIssue(
-                severity="error",
-                message=(
-                    "未配置任何 LLM（LITELLM_CONFIG / LLM_CHANNELS / *_API_KEY），"
-                    "AI 分析功能将不可用"
-                ),
-                field="LITELLM_CONFIG",
-            ))
-        elif not self.litellm_model:
-            issues.append(ConfigIssue(
-                severity="info",
-                message=(
-                    "LITELLM_MODEL 未配置，将自动从可用 API Key 推断模型。"
-                    "建议尽早配置 LITELLM_MODEL（格式如 gemini/gemini-2.5-flash）"
-                ),
-                field="LITELLM_MODEL",
-            ))
-
-        # --- Search engine (informational only) ---
-        if not (
-            self.bocha_api_keys
-            or self.tavily_api_keys
-            or self.brave_api_keys
-            or self.serpapi_keys
-        ):
-            issues.append(ConfigIssue(
-                severity="info",
-                message="未配置搜索引擎 API Key (Bocha/Tavily/Brave/SerpAPI)，新闻搜索功能将不可用",
-                field="BOCHA_API_KEY",
-            ))
-
-        # --- Notification channels ---
-        has_notification = bool(
-            self.wechat_webhook_url
-            or self.feishu_webhook_url
-            or (self.telegram_bot_token and self.telegram_chat_id)
-            or (self.email_sender and self.email_password)
-            or (self.pushover_user_key and self.pushover_api_token)
-            or self.pushplus_token
-            or self.serverchan3_sendkey
-            or self.custom_webhook_urls
-            or (self.discord_bot_token and self.discord_main_channel_id)
-            or self.discord_webhook_url
-        )
-        if not has_notification:
-            issues.append(ConfigIssue(
-                severity="warning",
-                message="未配置通知渠道，将不发送推送通知",
-                field="WECHAT_WEBHOOK_URL",
-            ))
-
-        # --- Deprecated field migration hints ---
-        if os.getenv("OPENAI_VISION_MODEL"):
-            issues.append(ConfigIssue(
-                severity="info",
-                message=(
-                    "OPENAI_VISION_MODEL 已废弃，请改用 VISION_MODEL。"
-                    "当前值已自动迁移，建议更新配置文件以消除此提示。"
-                ),
-                field="OPENAI_VISION_MODEL",
-            ))
-
-        # --- Vision key availability ---
-        # Only warn when user explicitly set VISION_MODEL (or OPENAI_VISION_MODEL alias).
-        # Skipped when vision_model is empty (Vision not intentionally configured).
-        if self.vision_model:
-            # Maps provider prefix → the corresponding key list tracked by Config.
-            # vertex_ai shares gemini keys; other LiteLLM-native providers are not
-            # in this map (their keys come from env vars, which we cannot inspect here).
-            _VISION_KEY_MAP = {
-                "gemini": self.gemini_api_keys,
-                "vertex_ai": self.gemini_api_keys,
-                "anthropic": self.anthropic_api_keys,
-                "openai": self.openai_api_keys,
-                "deepseek": self.deepseek_api_keys,
-            }
-            # Derive the primary model's provider prefix so that its key is also
-            # checked even when the provider is absent from VISION_PROVIDER_PRIORITY.
-            _primary_prefix = (
-                self.vision_model.split("/")[0]
-                if "/" in self.vision_model
-                else "openai"
-            )
-            _priority_providers = [
-                p.strip().lower()
-                for p in self.vision_provider_priority.split(",")
-                if p.strip()
-            ]
-            # Union: fallback providers + primary model's own provider
-            _all_providers = {_primary_prefix} | set(_priority_providers)
-
-            # Align with get_api_keys_for_model: keys must be non-empty and len >= 8
-            _has_any_key = any(
-                any(k and len(k) >= 8 for k in (_VISION_KEY_MAP.get(p) or []))
-                for p in _all_providers
-                if p in _VISION_KEY_MAP
-            )
-            if not _has_any_key:
-                _checked = sorted(_all_providers & _VISION_KEY_MAP.keys())
-                issues.append(ConfigIssue(
-                    severity="warning",
-                    message=(
-                        "VISION_MODEL 已配置，但未找到可用的 Vision API Key "
-                        f"（已检查：{', '.join(_checked)}）。"
-                        "图片股票代码提取功能将不可用，请配置对应的 API Key。"
-                    ),
-                    field="VISION_MODEL",
-                ))
-
-        return issues
-
-    def validate(self) -> List[str]:
-        """Return validation messages as plain strings (backward-compatible).
-
-        Internally delegates to validate_structured().  Callers that only need
-        the human-readable strings can continue to use this method unchanged.
-
-        Returns:
-            List of message strings, one per ConfigIssue.
-        """
-        return [issue.message for issue in self.validate_structured()]
-    
-    def get_db_url(self) -> str:
-        """
-        获取 SQLAlchemy 数据库连接 URL
-        
-        自动创建数据库目录（如果不存在）
-        """
-        db_path = Path(self.database_path)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        return f"sqlite:///{db_path.absolute()}"
-
-
-# === 便捷的配置访问函数 ===
-def get_config() -> Config:
-    """获取全局配置实例的快捷方式"""
-    return Config.get_instance()
-
-
-# ============================================================
-# Shared LLM helpers (used by both analyzer and agent/llm_adapter)
-# ============================================================
-
-def get_api_keys_for_model(model: str, config: Config) -> List[str]:
-    """Return explicitly managed API keys for a litellm model (legacy path only).
-
-    When llm_model_list is populated (channels / YAML), the Router handles key
-    selection, so this function is not needed.  Kept for backward compat when
-    no Router is built and a direct litellm.completion() call is needed.
-    """
-    if model.startswith("gemini/") or model.startswith("vertex_ai/"):
-        return [k for k in config.gemini_api_keys if k and len(k) >= 8]
-    if model.startswith("anthropic/"):
-        return [k for k in config.anthropic_api_keys if k and len(k) >= 8]
-    if model.startswith("deepseek/"):
-        return [k for k in config.deepseek_api_keys if k and len(k) >= 8]
-    if model.startswith("openai/") or "/" not in model:
-        return [k for k in config.openai_api_keys if k and len(k) >= 8]
-    # Other LiteLLM-native providers – API key resolved from env vars
-    return []
-
-
-def extra_litellm_params(model: str, config: Config) -> Dict[str, Any]:
-    """Build extra litellm params for a model (legacy path only).
-
-    When llm_model_list is populated, the Router already carries api_base
-    and headers per-deployment, so this is not called.
-    """
-    params: Dict[str, Any] = {}
-    # deepseek/ provider: litellm auto-resolves api_base, no manual override needed
-    if model.startswith("deepseek/"):
-        return params
-    if model.startswith("openai/") or "/" not in model:
-        if config.openai_base_url:
-            params["api_base"] = config.openai_base_url
-        if config.openai_base_url and "aihubmix.com" in config.openai_base_url:
-            params["extra_headers"] = {"APP-Code": "GPIJ3886"}
-    return params
-
-
-if __name__ == "__main__":
-    # 测试配置加载
-    config = get_config()
-    print("=== 配置加载测试 ===")
-    print(f"自选股列表: {config.stock_list}")
-    print(f"数据库路径: {config.database_path}")
-    print(f"最大并发数: {config.max_workers}")
-    print(f"调试模式: {config.debug}")
-    
-    # 验证配置
-    warnings = config.validate()
-    if warnings:
-        print("\n配置验证结果:")
-        for w in warnings:
-            print(f"  - {w}")
+            market_review_enabled=os.getenv('MARKET_REVIEW_ENABLED', 'true').lower() != 'false',
+            market_review_region=cls._parse_market_review_region
